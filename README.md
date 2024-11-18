@@ -32,6 +32,10 @@ A real-time monitoring tool for ARK: Survival Ascended servers that displays pla
 ## Source Code
 All source code is available in this repository for review and verification.
 
+### Latest Version: v1.0.0
+- Direct download link for latest version / 최신 버전 직접 다운로드:
+  - [serveroverlay.exe](https://github.com/Jeong-Ryeol/ASA-server-monitering/releases/download/v1.0.0/serveroverlay.exe)
+
 ---
 
 # ARK 서버 모니터
@@ -65,3 +69,7 @@ ARK: Survival Ascended 서버의 플레이어 수와 서버 상태를 실시간�
 
 ## 소스 코드
 모든 소스 코드는 이 저장소에서 확인하실 수 있습니다.
+
+## Download / 다운로드
+- [Download Latest Version / 최신 버전 다운로드](https://github.com/Jeong-Ryeol/ASA-server-monitering/releases/latest/download/serveroverlay.exe)
+- [View All Versions / 모든 버전 보기](https://github.com/Jeong-Ryeol/ASA-server-monitering/releases)
