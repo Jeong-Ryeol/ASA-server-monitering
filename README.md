@@ -1,3 +1,8 @@
+
+
+
+https://github.com/user-attachments/assets/5fd19064-52b6-45e1-b64d-e752d8c29070
+
 # ARK Server Monitor
 
 A real-time monitoring tool for ARK: Survival Ascended servers that displays player counts and server status.
