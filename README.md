@@ -1,4 +1,8 @@
-# ARK Server Monitor
+#
+
+https://github.com/user-attachments/assets/ae1e66b5-c37c-4ec9-a674-c33dd621f8af
+
+ ARK Server Monitor
 
 A real-time monitoring tool for ARK: Survival Ascended servers with enhanced features and improved performance.
 
