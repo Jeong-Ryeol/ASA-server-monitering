@@ -67,9 +67,9 @@ A real-time monitoring tool for ARK: Survival Ascended servers with enhanced fea
 ## Source Code
 All source code is available in this repository for review and verification.
 
-### Latest Version: v1.1.0
+### Latest Version: v1.2.0
 - Direct download link for latest version / 최신 버전 직접 다운로드:
-  - [ARKServerMonitor.exe](https://github.com/Jeong-Ryeol/ASA-server-monitering/releases/download/v1.1.0/ARKServerMonitor.exe)
+  - [ARKServerMonitor.exe](https://github.com/Jeong-Ryeol/ASA-server-monitering/releases/download/v1.2.0/ARKServerMonitor.exe)
 
 ---
 
