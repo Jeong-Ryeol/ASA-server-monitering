@@ -1,3 +1,7 @@
+process.on('uncaughtException', (error) => {
+    console.log('Error:', error);
+});
+
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
@@ -11,14 +15,14 @@ function createWindow() {
         transparent: true,
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false
+            contextIsolation: false,
+            devTools: false
         },
         skipTaskbar: true,
         x: 0,
         y: 0,
-        // 창 특성 변경
         alwaysOnTop: true,
-        focusable: true,  // 다시 true로 변경
+        focusable: true,
         hasShadow: false,
         resizable: false,
         movable: false,
@@ -30,25 +34,26 @@ function createWindow() {
 
     mainWindow.loadFile('index.html');
 
-    // 마우스 이벤트 처리
+    mainWindow.webContents.on('console-message', (e, level, message) => {
+        e.preventDefault();
+    });
+
     ipcMain.on('enable-mouse', () => {
         mainWindow.setIgnoreMouseEvents(false);
         mainWindow.moveTop();
         mainWindow.setAlwaysOnTop(true, 'screen-saver');
-        mainWindow.focusOnWebView();  // 웹뷰에 포커스
+        mainWindow.focusOnWebView();
     });
 
     ipcMain.on('disable-mouse', () => {
         mainWindow.setIgnoreMouseEvents(true, { forward: true });
     });
 
-    // 주기적으로 창을 최상위로 유지
     setInterval(() => {
         mainWindow.moveTop();
         mainWindow.setAlwaysOnTop(true, 'screen-saver');
     }, 100);
 
-    // 창이 포커스를 잃었을 때
     mainWindow.on('blur', () => {
         mainWindow.moveTop();
         mainWindow.setAlwaysOnTop(true, 'screen-saver');

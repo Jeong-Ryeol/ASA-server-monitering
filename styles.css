@@ -71,3 +71,27 @@ body {
 .remove-btn:hover {
     color: #FFFF66;
 }
+
+#timerButton {
+    color: #FFFF00;
+}
+
+.timer-display {
+    background: transparent;
+    margin: 2px 0;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    color: #FF0000;
+    font-size: 14px;
+}
+
+.timer-input {
+    background: #222222;
+    color: #FFFF00;
+    border: 1px solid #FFFF00;
+    padding: 2px 5px;
+    width: 60px;
+    margin-right: 10px;
+    text-align: center;
+}

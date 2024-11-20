@@ -1,8 +1,28 @@
-#
+# Latest Update (2024.03.21)
+- Added Timer Feature
+  * Start timer with = button
+  * Input format: minutes or minutes:seconds (e.g., 2 or 2:30)
+  * Auto-reset to 15 minutes when timer reaches zero
+  * Display in top-right corner
+- Fixed JavaScript Error
+  * Resolved uncaught exception errors
+  * Improved application stability
+  * Enhanced error handling
+
+# 업데이트 (2024.03.21)
+- 타이머 기능 추가
+  * = 버튼으로 타이머 시작
+  * 분 또는 분:초 형식으로 입력 가능 (예: 2 또는 2:30)
+  * 타이머가 0이 되면 자동으로 15분으로 리셋
+  * 우측 상단에 표시
+- 자바스크립트 오류 수정
+  * 예외 처리 오류 해결
+  * 프로그램 안정성 개선
+  * 오류 처리 기능 강화
+
+# ARK Server Monitor
 
 https://github.com/user-attachments/assets/ae1e66b5-c37c-4ec9-a674-c33dd621f8af
-
- ARK Server Monitor
 
 A real-time monitoring tool for ARK: Survival Ascended servers with enhanced features and improved performance.
 
@@ -16,6 +36,7 @@ A real-time monitoring tool for ARK: Survival Ascended servers with enhanced fea
 - Click-through window functionality
 - Always-on-top display
 - Minimal and clean interface
+- Timer function for tracking events
 - Improved performance with Electron
 
 ## Usage

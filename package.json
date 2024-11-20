@@ -1,19 +1,26 @@
 {
   "name": "ark-monitor",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "ARK Server Monitor",
-  "author": "Your Name",
   "main": "main.js",
+  "author": {
+    "name": "Jeong-Ryeol",
+    "email": "your.email@example.com"
+  },
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "dist": "electron-builder",
-    "install": "node-gyp rebuild"
+    "dist": "electron-builder"
   },
   "build": {
     "appId": "com.arkmonitor.app",
     "win": {
-      "target": "portable"
+      "target": "portable",
+      "icon": "icon.ico",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "ARKServerMonitor.exe"
     }
   },
   "dependencies": {
@@ -22,8 +29,5 @@
   "devDependencies": {
     "electron": "^28.3.3",
     "electron-builder": "^24.9.1"
-  },
-  "gypfile": true,
-  "keywords": [],
-  "license": "ISC"
+  }
 }
