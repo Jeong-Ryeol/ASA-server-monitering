@@ -1,53 +1,44 @@
-const AsaQuery = require('asa-query');
+const { ipcRenderer } = require('electron');
 
 class ServerMonitor {
     constructor() {
         this.container = document.getElementById('serverList');
         this.monitors = [];
-        const { ipcRenderer } = require('electron');
-        
-        // 마우스 이벤트가 필요한 요소들
+
         const interactiveElements = ['#addServer', '#closeApp', '#timerBtn', '.remove-btn', '.server-input', '.type-btn'];
-        
-        // mouseover 이벤트 리스너
+
         document.addEventListener('mouseover', (e) => {
-            // 입력 중일 때는 마우스 이벤트 활성화
             if (document.activeElement.classList.contains('server-input')) {
                 ipcRenderer.send('enable-mouse');
                 return;
             }
-            
-            // 특정 버튼들에 대해서만 마우스 이벤트 활성화
             if (interactiveElements.some(selector => e.target.closest(selector))) {
                 ipcRenderer.send('enable-mouse');
             }
         });
-    
-        // mouseout 이벤트 리스너
+
         document.addEventListener('mouseout', (e) => {
-            // 입력 중이 아닐 때만 마우스 이벤트 비활성화
             if (!document.activeElement.classList.contains('server-input')) {
                 if (interactiveElements.some(selector => e.target.closest(selector))) {
                     ipcRenderer.send('disable-mouse');
                 }
             }
         });
-        
-        // 입력 필드 focus/blur 이벤트
+
         document.addEventListener('focusin', (e) => {
             if (e.target.classList.contains('server-input')) {
                 ipcRenderer.send('enable-mouse');
             }
         });
-        
+
         document.addEventListener('focusout', (e) => {
             if (e.target.classList.contains('server-input')) {
                 ipcRenderer.send('disable-mouse');
             }
         });
-        
+
         document.getElementById('addServer').addEventListener('click', () => this.addMonitor());
-        document.getElementById('closeApp').addEventListener('click', () => window.close());
+        document.getElementById('closeApp').addEventListener('click', () => ipcRenderer.send('quit-app'));
     }
 
     createMonitorElement(isOfficial) {
@@ -90,92 +81,113 @@ class ServerMonitor {
     }
 
     async addMonitor() {
-        const selectorDiv = document.createElement('div');
-        selectorDiv.className = 'monitor';
+        // Search input row (no official/unofficial selection needed)
+        const searchDiv = document.createElement('div');
+        searchDiv.className = 'monitor';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'server-input';
+        searchInput.placeholder = 'Server name or #';
+        searchInput.style.width = '150px';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'remove-btn';
+        cancelBtn.textContent = '×';
+        cancelBtn.addEventListener('click', () => {
+            searchDiv.remove();
+            const oldResults = document.getElementById('search-results');
+            if (oldResults) oldResults.remove();
+        });
+        searchDiv.appendChild(searchInput);
+        searchDiv.appendChild(cancelBtn);
+        this.container.appendChild(searchDiv);
+        searchInput.focus();
 
-        const officialBtn = document.createElement('button');
-        officialBtn.className = 'type-btn';
-        officialBtn.textContent = 'Official';
+        searchInput.addEventListener('keypress', async (e) => {
+            if (e.key !== 'Enter') return;
+            const searchText = searchInput.value;
+            if (!searchText) return;
 
-        const unofficialBtn = document.createElement('button');
-        unofficialBtn.className = 'type-btn';
-        unofficialBtn.textContent = 'Unofficial';
+            const oldResults = document.getElementById('search-results');
+            if (oldResults) oldResults.remove();
 
-        selectorDiv.appendChild(officialBtn);
-        selectorDiv.appendChild(unofficialBtn);
-        this.container.appendChild(selectorDiv);
+            searchInput.style.borderColor = '#FFFF00';
+            const result = await ipcRenderer.invoke('search-servers', { searchText });
+            if (!result.success || result.servers.length === 0) {
+                searchInput.style.borderColor = '#FF0000';
+                return;
+            }
 
-        const selectType = (isOfficial) => {
-            selectorDiv.remove();
-            const elements = this.createMonitorElement(isOfficial);
-            this.container.appendChild(elements.monitorDiv);
+            const listDiv = document.createElement('div');
+            listDiv.id = 'search-results';
 
-            let updateInterval = null;
+            result.servers.forEach(server => {
+                const row = document.createElement('div');
+                row.className = 'search-result';
 
-            elements.input.addEventListener('keypress', async (e) => {
-                if (e.key === 'Enter') {
-                    const searchText = elements.input.value;
+                const name = document.createElement('span');
+                name.className = 'result-name';
+                name.textContent = server.name;
+
+                const players = document.createElement('span');
+                players.className = 'result-players';
+                players.textContent = `${server.players}/${server.maxPlayers}`;
+
+                row.appendChild(name);
+                row.appendChild(players);
+                listDiv.appendChild(row);
+
+                row.addEventListener('click', () => {
+                    searchDiv.remove();
+                    listDiv.remove();
+
+                    const elements = this.createMonitorElement(false);
+                    this.container.appendChild(elements.monitorDiv);
                     elements.input.style.display = 'none';
-                    updateInterval = await this.startMonitoring(elements, searchText, isOfficial);
-                }
+                    elements.playerLabel.textContent = `Players: ${server.players}`;
+                    elements.serverName.textContent = server.name;
+
+                    const interval = this.startRefreshing(elements, server.name);
+
+                    elements.removeBtn.addEventListener('click', () => {
+                        if (interval) clearInterval(interval);
+                        elements.monitorDiv.remove();
+                    });
+                });
             });
 
-            elements.removeBtn.addEventListener('click', () => {
-                if (updateInterval) clearInterval(updateInterval);
-                elements.monitorDiv.remove();
-            });
-
-            elements.input.focus();
-        };
-
-        officialBtn.addEventListener('click', () => selectType(true));
-        unofficialBtn.addEventListener('click', () => selectType(false));
+            this.container.appendChild(listDiv);
+        });
     }
 
-    async startMonitoring(elements, searchText, isOfficial) {
+    startRefreshing(elements, serverName) {
         let previousPlayers = 0;
 
-        const updateServer = async () => {
+        const update = async () => {
             try {
-                const query = new AsaQuery();
-                if (isOfficial) {
-                    query.official();
-                } else {
-                    query.unofficial();
+                const result = await ipcRenderer.invoke('refresh-server', { serverName });
+                if (!result.success) return;
+
+                const currentPlayers = result.players;
+                elements.playerLabel.textContent = `Players: ${currentPlayers}`;
+                elements.serverName.textContent = result.name;
+                elements.serverName.style.color = '#FFFF00';
+
+                if (currentPlayers !== previousPlayers) {
+                    const increased = currentPlayers > previousPlayers;
+                    this.flashElement(elements.playerLabel, increased);
+                    this.flashElement(elements.serverName, increased);
+                    previousPlayers = currentPlayers;
                 }
-                const results = await query
-                    .serverNameContains(searchText)
-                    .max(1)
-                    .exec();
-
-                if (results && results.sessions && results.sessions.length > 0) {
-                    const server = results.sessions[0];
-                    const currentPlayers = server.totalPlayers || 0;
-
-                    elements.playerLabel.textContent = `Players: ${currentPlayers}`;
-                    elements.serverName.textContent = server.attributes?.SESSIONNAME_s || 'Unknown';
-
-                    if (currentPlayers !== previousPlayers) {
-                        const increased = currentPlayers > previousPlayers;
-                        this.flashElement(elements.playerLabel, increased);
-                        this.flashElement(elements.serverName, increased);
-                        previousPlayers = currentPlayers;
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
+            } catch (e) {}
         };
 
-        await updateServer();
-        return setInterval(updateServer, 5000);
+        return setInterval(update, 5000);
     }
 
     flashElement(element, increased) {
         let flashCount = 0;
         const flash = () => {
             flashCount++;
-            // increased가 true면 빨간색, false면 파란색
             element.style.color = flashCount % 2 ? (increased ? '#FF0000' : '#0000FF') : '#FFFF00';
             if (flashCount < 10) {
                 setTimeout(flash, 500);
@@ -192,7 +204,7 @@ class TimerMonitor {
         this.timerInterval = null;
         this.timerLabel = null;
         this.timerContainer = null;
-        
+
         document.getElementById('timerBtn').addEventListener('click', () => this.toggleTimer());
     }
 
@@ -208,10 +220,9 @@ class TimerMonitor {
         input.className = 'server-input timer-input';
         input.placeholder = 'min[:sec]';
         input.style.width = '50px';
-        
-        // titlebar에 추가
+
         const titlebar = document.getElementById('titlebar');
-        titlebar.appendChild(input);  // 맨 오른쪽에 추가
+        titlebar.appendChild(input);
         input.focus();
 
         input.addEventListener('keypress', (e) => {
@@ -244,24 +255,20 @@ class TimerMonitor {
             clearInterval(this.timerInterval);
         }
 
-        // 기존 타이머 컨테이너가 있으면 제거
         if (this.timerContainer) {
             this.timerContainer.remove();
         }
 
-        // 타이머 컨테이너 생성
         this.timerContainer = document.createElement('div');
         this.timerContainer.style.display = 'flex';
         this.timerContainer.style.alignItems = 'center';
         this.timerContainer.style.marginLeft = '5px';
 
-        // 타이머 레이블 생성
         this.timerLabel = document.createElement('span');
         this.timerLabel.style.color = '#FF0000';
         this.timerLabel.style.marginRight = '5px';
         this.timerLabel.style.fontSize = '14px';
 
-        // 타이머 제거 버튼
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-btn';
         removeBtn.textContent = '×';
@@ -274,14 +281,12 @@ class TimerMonitor {
             this.timerLabel = null;
         });
 
-        // 컨테이너에 요소들 추가
         this.timerContainer.appendChild(this.timerLabel);
         this.timerContainer.appendChild(removeBtn);
-        
-        // titlebar 맨 오른쪽에 추가
+
         const titlebar = document.getElementById('titlebar');
         titlebar.appendChild(this.timerContainer);
-        
+
         const updateDisplay = () => {
             const mins = Math.floor(totalSeconds / 60);
             const secs = totalSeconds % 60;
@@ -292,13 +297,13 @@ class TimerMonitor {
         this.timerInterval = setInterval(() => {
             totalSeconds--;
             if (totalSeconds < 0) {
-                totalSeconds = 15 * 60; // 15분으로 리셋
+                totalSeconds = 15 * 60;
             }
             updateDisplay();
         }, 1000);
     }
 }
 
-// ServerMonitor 인스턴스 생성 후에 TimerMonitor 인스턴스 생성
+// No login needed - CDN method
 new ServerMonitor();
 new TimerMonitor();

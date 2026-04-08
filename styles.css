@@ -119,3 +119,33 @@ body {
     margin-right: 10px;
     text-align: center;
 }
+
+.search-result {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    margin: 1px 5px;
+    cursor: pointer;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(255, 255, 0, 0.1);
+}
+
+.search-result:hover {
+    background: rgba(255, 255, 0, 0.1);
+}
+
+.result-name {
+    color: #FFFF00;
+    margin-right: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 280px;
+}
+
+.result-players {
+    color: #00FF00;
+    white-space: nowrap;
+    font-weight: bold;
+}
