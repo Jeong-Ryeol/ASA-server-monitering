@@ -7,7 +7,7 @@ class ServerMonitor {
         const { ipcRenderer } = require('electron');
         
         // 마우스 이벤트가 필요한 요소들
-        const interactiveElements = ['#addServer', '#closeApp', '#timerBtn', '.remove-btn', '.server-input'];
+        const interactiveElements = ['#addServer', '#closeApp', '#timerBtn', '.remove-btn', '.server-input', '.type-btn'];
         
         // mouseover 이벤트 리스너
         document.addEventListener('mouseover', (e) => {
@@ -50,78 +50,112 @@ class ServerMonitor {
         document.getElementById('closeApp').addEventListener('click', () => window.close());
     }
 
-    createMonitorElement() {
+    createMonitorElement(isOfficial) {
         const monitorDiv = document.createElement('div');
         monitorDiv.className = 'monitor';
-        
+
+        const typeTag = document.createElement('span');
+        typeTag.className = 'server-type';
+        typeTag.textContent = isOfficial ? 'O' : 'U';
+        typeTag.style.color = isOfficial ? '#00FF00' : '#FF8800';
+        typeTag.style.marginRight = '5px';
+        typeTag.style.fontSize = '12px';
+        typeTag.style.fontWeight = 'bold';
+
         const playerLabel = document.createElement('span');
         playerLabel.className = 'player-count';
         playerLabel.textContent = 'Players: 0';
-        
+
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'server-input';
-        input.placeholder = '#';
-        
+        input.placeholder = isOfficial ? '#' : 'Name';
+        if (!isOfficial) input.style.width = '100px';
+
         const serverName = document.createElement('span');
         serverName.className = 'server-name';
         serverName.textContent = 'NONE';
-        
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'remove-btn';
         removeBtn.textContent = '×';
-        
+
+        monitorDiv.appendChild(typeTag);
         monitorDiv.appendChild(playerLabel);
         monitorDiv.appendChild(input);
         monitorDiv.appendChild(serverName);
         monitorDiv.appendChild(removeBtn);
-        
+
         return { monitorDiv, playerLabel, input, serverName, removeBtn };
     }
 
     async addMonitor() {
-        const elements = this.createMonitorElement();
-        this.container.appendChild(elements.monitorDiv);
-        
-        let updateInterval = null;
-        
-        elements.input.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const serverNumber = elements.input.value;
-                elements.input.style.display = 'none';
-                updateInterval = await this.startMonitoring(elements, serverNumber);
-            }
-        });
-        
-        elements.removeBtn.addEventListener('click', () => {
-            if (updateInterval) clearInterval(updateInterval);
-            elements.monitorDiv.remove();
-        });
-        
-        elements.input.focus();
+        const selectorDiv = document.createElement('div');
+        selectorDiv.className = 'monitor';
+
+        const officialBtn = document.createElement('button');
+        officialBtn.className = 'type-btn';
+        officialBtn.textContent = 'Official';
+
+        const unofficialBtn = document.createElement('button');
+        unofficialBtn.className = 'type-btn';
+        unofficialBtn.textContent = 'Unofficial';
+
+        selectorDiv.appendChild(officialBtn);
+        selectorDiv.appendChild(unofficialBtn);
+        this.container.appendChild(selectorDiv);
+
+        const selectType = (isOfficial) => {
+            selectorDiv.remove();
+            const elements = this.createMonitorElement(isOfficial);
+            this.container.appendChild(elements.monitorDiv);
+
+            let updateInterval = null;
+
+            elements.input.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    const searchText = elements.input.value;
+                    elements.input.style.display = 'none';
+                    updateInterval = await this.startMonitoring(elements, searchText, isOfficial);
+                }
+            });
+
+            elements.removeBtn.addEventListener('click', () => {
+                if (updateInterval) clearInterval(updateInterval);
+                elements.monitorDiv.remove();
+            });
+
+            elements.input.focus();
+        };
+
+        officialBtn.addEventListener('click', () => selectType(true));
+        unofficialBtn.addEventListener('click', () => selectType(false));
     }
 
-    async startMonitoring(elements, serverNumber) {
+    async startMonitoring(elements, searchText, isOfficial) {
         let previousPlayers = 0;
-        const query = new AsaQuery();
-        
+
         const updateServer = async () => {
             try {
+                const query = new AsaQuery();
+                if (isOfficial) {
+                    query.official();
+                } else {
+                    query.unofficial();
+                }
                 const results = await query
-                    .official()
-                    .serverNameContains(serverNumber)
+                    .serverNameContains(searchText)
                     .max(1)
                     .exec();
 
                 if (results && results.sessions && results.sessions.length > 0) {
                     const server = results.sessions[0];
                     const currentPlayers = server.totalPlayers || 0;
-                    
+
                     elements.playerLabel.textContent = `Players: ${currentPlayers}`;
                     elements.serverName.textContent = server.attributes?.SESSIONNAME_s || 'Unknown';
-                    
+
                     if (currentPlayers !== previousPlayers) {
-                        // 플레이어 수가 증가했는지 감소했는지 확인
                         const increased = currentPlayers > previousPlayers;
                         this.flashElement(elements.playerLabel, increased);
                         this.flashElement(elements.serverName, increased);

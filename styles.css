@@ -72,6 +72,30 @@ body {
     color: #FFFF66;
 }
 
+.type-btn {
+    background: transparent;
+    border: 1px solid #FFFF00;
+    color: #FFFF00;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 8px;
+    margin-right: 5px;
+}
+
+.type-btn:first-child {
+    color: #00FF00;
+    border-color: #00FF00;
+}
+
+.type-btn:last-child {
+    color: #FF8800;
+    border-color: #FF8800;
+}
+
+.type-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
 #timerButton {
     color: #FFFF00;
 }
